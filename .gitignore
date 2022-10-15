@@ -1,0 +1,6 @@
+.idea
+.mypy_cache
+venv
+backend/tests/.pytest_cache
+backend/transfer/pretrained
+*__pycache__
