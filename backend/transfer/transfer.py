@@ -1,3 +1,4 @@
+import asyncio
 import typing as tp
 
 from torch import Tensor
@@ -58,6 +59,7 @@ class StyleTransferProcessor:
     async def transfer_style(self) -> Image:
         self._transfer_status = 1
         for iteration_idx in range(self._num_iteration):
+            await asyncio.sleep(0)
             await self._process_transfer_iteration()
 
         result: Image = await self.get_current_image()

@@ -2,5 +2,6 @@
 .mypy_cache
 venv
 backend/tests/.pytest_cache
+backend/tests/test_data/*result*
 backend/transfer/pretrained
 *__pycache__
