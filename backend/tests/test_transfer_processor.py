@@ -13,6 +13,7 @@ def content_image() -> tp.Generator[Tensor, None, None]:
     with Image.open(Config.path_to_backend / "tests/test_data/content_img.png") as image:
         yield image
 
+
 @pytest.fixture(scope="module")
 def style_image() -> tp.Generator[Tensor, None, None]:
     with Image.open(Config.path_to_backend / "tests/test_data/style_img.png") as image:

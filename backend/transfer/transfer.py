@@ -65,12 +65,9 @@ class StyleTransferProcessor:
         return result
 
     async def _process_transfer_iteration(self) -> None:
-        assert self._nst_model is not None, f"StyleTransferProcessor is not configured! Call configure() method!"
+        assert self._nst_model is not None, "StyleTransferProcessor is not configured! Call configure() method!"
         self._optimizer.zero_grad()
         self._nst_model(self._input_tensor)
         loss: Tensor = self._nst_model.collect_loss(self._collect_content_loss_layers, self._collect_style_loss_layers)
         loss.backward(retain_graph=True)
         self._optimizer.step()
-
-
-

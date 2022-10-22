@@ -49,7 +49,7 @@ class NSTModel(nn.Module):
     def forward(self, inp: Tensor) -> Tensor:
         """
         Forwards input tensor through the model
-        :param inp: input tesnor
+        :param inp: input tensor
         :return: output of the model
         """
         output = self._model(inp)
@@ -82,15 +82,19 @@ class NSTModel(nn.Module):
         loss: Tensor = content_loss + alpha * style_loss
         return loss
 
-    def cut_model(self, conv_layer_idx: int):
-        for model_layer_idx, layer in enumerate(self._model):
+    def cut_model(self, conv_layer_idx: int) -> None:
+        """
+        Cuts all layers of the model after conv_layer_idx convolutional layers
+        :param conv_layer_idx: number of convolutional layers that has to be preserved
+        """
+        for model_layer_idx, layer in enumerate(self._model.children()):
             if isinstance(layer, nn.Conv2d):
                 conv_layer_idx -= 1
             if conv_layer_idx + 1 == 0:
                 self._model = self._model[:model_layer_idx + 2]
                 return
 
-    def _initialize_available_models(self):
+    def _initialize_available_models(self) -> None:
         """
         Initializes available base models for neural style transfer. Adds two dictionaries. first contains mapping from
         model_type (str) to torch function that loads pretrained base model. Second contains mapping from model_type to
@@ -109,7 +113,7 @@ class NSTModel(nn.Module):
             "vgg19": VGG19_Weights.DEFAULT,
         }
 
-    def _build_model(self, content_image: Image, style_image: Image, pretrained_model_type: str):
+    def _build_model(self, content_image: Image, style_image: Image, pretrained_model_type: str) -> nn.Module:
         """
         Builds model that will be used for neural style_transfer
         :param content_image: content image
@@ -156,5 +160,5 @@ class NSTModel(nn.Module):
                 weights=self._available_base_models_weights[model_type]
             ).eval().features
         else:
-            raise NotImplemented("Only vgg models available as base models!")
+            raise NotImplementedError("Only vgg models available as base models!")
         return base_model

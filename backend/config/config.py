@@ -1,6 +1,5 @@
 import torch
 
-from torch import device
 from pathlib import Path
 
 
@@ -10,7 +9,7 @@ class Config:
 
     # The device on which the calculations take place
     # Default value depends on your system (GPU or CPU)
-    device: device = device("cuda") if torch.cuda.is_available() else device("cpu")
+    device: torch.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Mean and std for normalization of input to pretrained network. Calculated on ImageNet data.
     normalization_mean: torch.Tensor = torch.tensor([0.485, 0.456, 0.406]).view(-1, 1, 1).to(device)

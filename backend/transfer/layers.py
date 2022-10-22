@@ -64,4 +64,3 @@ class StyleLossLayer(torch.nn.Module):
         matrix: torch.Tensor = tensor.view(bs * c, h * w)
         result: torch.Tensor = torch.mm(matrix, matrix.t()).div(bs * c * h * w)
         return result
-
