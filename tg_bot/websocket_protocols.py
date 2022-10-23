@@ -1,5 +1,5 @@
 from PIL import Image
-from fastapi import WebSocket
+from websockets.legacy.client import WebSocketClientProtocol as WebSocket
 from dataclasses import dataclass
 
 
@@ -10,14 +10,14 @@ class WebsocketImage:
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "WebsocketImage":
-        size_text = (await websocket.receive_text()).split()
-        size = (int(size_text[0]), int(size_text[1]))
-        bytes_array = await websocket.receive_bytes()
+        size_text: list[str] = (await websocket.recv()).split()
+        size: tuple[int, int] = (int(size_text[0]), int(size_text[1]))
+        bytes_array: bytes = await websocket.recv()
         return WebsocketImage(bytes_array, size)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
-        await websocket.send_text(str(self.size[0]) + " " + str(self.size[1]))
-        await websocket.send_bytes(self.bytes_array)
+        await websocket.send(str(self.size[0]) + " " + str(self.size[1]))
+        await websocket.send(self.bytes_array)
 
     @staticmethod
     def from_pil_image(img: Image.Image) -> Image:
@@ -37,13 +37,13 @@ class StartStyleTransferRequest:
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "StartStyleTransferRequest":
-        username = await websocket.receive_text()
-        content_image = await WebsocketImage.from_websocket(websocket)
-        style_image = await WebsocketImage.from_websocket(websocket)
+        username: str = await websocket.recv()
+        content_image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
+        style_image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
         return StartStyleTransferRequest(username, content_image, style_image)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
-        await websocket.send_text(self.username)
+        await websocket.send(self.username)
         await self.content_image.to_websocket(websocket)
         await self.style_image.to_websocket(websocket)
 

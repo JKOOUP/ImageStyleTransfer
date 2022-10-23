@@ -21,7 +21,7 @@ async def style_transfer_ws(websocket: WebSocket) -> None:
         processor.configure(
             content_image=request.content_image.to_pil_image(),
             style_image=request.style_image.to_pil_image(),
-            num_iteration=50,
+            num_iteration=1000,
             collect_content_loss_layers=[3],
             collect_style_loss_layers=[0, 1, 2, 3],
         )
@@ -34,7 +34,6 @@ async def style_transfer_ws(websocket: WebSocket) -> None:
                 await StyleTransferResponse.from_pil_image(await processor.get_current_image()).to_websocket(websocket)
             except AssertionError:
                 break
-
             await asyncio.sleep(5)
     except WebSocketDisconnect:
         pass
