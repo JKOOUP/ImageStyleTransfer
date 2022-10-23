@@ -1,6 +1,6 @@
 import torch
-import torch.nn as nn
 import typing as tp
+import torch.nn as nn
 
 from torch import Tensor
 from pathlib import Path
@@ -10,7 +10,11 @@ from torchvision.models import vgg11, vgg13, vgg16, vgg19
 from torchvision.models import VGG11_Weights, VGG13_Weights, VGG16_Weights, VGG19_Weights
 
 from backend.config import Config
+from backend.logger import get_logger
 from backend.transfer.layers import ContentLossLayer, StyleLossLayer
+
+
+logger = get_logger(__name__)
 
 
 class NSTModel(nn.Module):
@@ -76,8 +80,7 @@ class NSTModel(nn.Module):
             style_loss += self._style_loss_layers[layer_idx].loss
         style_loss /= len(collect_style_loss_layers)
 
-        print(f"Content loss: {content_loss.item():.6f}")
-        print(f"Style loss: {style_loss.item():.6f}")
+        logger.debug(f"[CONTENT_LOSS: {content_loss.item():.6f}][STYLE_LOSS: {style_loss.item():.4f}]")
 
         loss: Tensor = content_loss + alpha * style_loss
         return loss

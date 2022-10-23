@@ -20,3 +20,6 @@ class Config:
 
     # Style loss coefficient in total loss
     alpha: torch.Tensor = torch.tensor(10000, device=device)
+
+    # Enable debug mode
+    debug: bool = False
