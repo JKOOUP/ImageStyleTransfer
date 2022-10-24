@@ -51,17 +51,21 @@ class StartStyleTransferRequest:
 @dataclass
 class StyleTransferResponse:
     image: WebsocketImage
+    completeness: int
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "StyleTransferResponse":
-        return StyleTransferResponse(await WebsocketImage.from_websocket(websocket))
+        image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
+        completeness: int = int(await websocket.receive_text())
+        return StyleTransferResponse(image, completeness)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
         await self.image.to_websocket(websocket)
+        await websocket.send_text(str(self.completeness))
 
     @staticmethod
-    def from_pil_image(img: Image.Image) -> "StyleTransferResponse":
-        return StyleTransferResponse(WebsocketImage.from_pil_image(img))
+    def from_pil_image(img: Image.Image, completeness: int = 0) -> "StyleTransferResponse":
+        return StyleTransferResponse(WebsocketImage.from_pil_image(img), completeness)
 
     def to_pil_image(self) -> Image.Image:
         return self.image.to_pil_image()

@@ -5,3 +5,4 @@ backend/tests/.pytest_cache
 backend/tests/test_data/*result*
 backend/transfer/pretrained
 *__pycache__
+tg_bot/config.yaml

@@ -1,6 +1,8 @@
 from PIL import Image
-from websockets.legacy.client import WebSocketClientProtocol as WebSocket
+from io import BytesIO
 from dataclasses import dataclass
+from aiogram.types import PhotoSize
+from websockets.legacy.client import WebSocketClientProtocol as WebSocket
 
 
 @dataclass
@@ -24,6 +26,23 @@ class WebsocketImage:
         bytes_array = img.tobytes()
         size = img.size
         return WebsocketImage(bytes_array, size)
+
+    @staticmethod
+    async def from_telegram_photo(photo: PhotoSize) -> "WebsocketImage":
+        stream: BytesIO = BytesIO()
+        await photo.download(destination_file=stream)
+
+        bytes_array: bytes = Image.open(stream).tobytes()
+        photo_size: tuple[int, int] = (photo.width, photo.height)
+        return WebsocketImage(bytes_array, photo_size)
+
+    async def to_bytes_stream(self) -> BytesIO:
+        pil_image: Image.Image = self.to_pil_image()
+        stream: BytesIO = BytesIO()
+        stream.name = "img.jpg"
+        pil_image.save(stream, "JPEG")
+        stream.seek(0)
+        return stream
 
     def to_pil_image(self) -> Image:
         return Image.frombytes("RGB", self.size, self.bytes_array)
@@ -51,17 +70,21 @@ class StartStyleTransferRequest:
 @dataclass
 class StyleTransferResponse:
     image: WebsocketImage
+    completeness: int
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "StyleTransferResponse":
-        return StyleTransferResponse(await WebsocketImage.from_websocket(websocket))
+        image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
+        completeness: int = int(await websocket.recv())
+        return StyleTransferResponse(image, completeness)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
         await self.image.to_websocket(websocket)
+        await websocket.send(str(self.completeness))
 
     @staticmethod
-    def from_pil_image(img: Image.Image) -> "StyleTransferResponse":
-        return StyleTransferResponse(WebsocketImage.from_pil_image(img))
+    def from_pil_image(img: Image.Image, completeness: int = 0) -> "StyleTransferResponse":
+        return StyleTransferResponse(WebsocketImage.from_pil_image(img), completeness)
 
     def to_pil_image(self) -> Image.Image:
         return self.image.to_pil_image()
