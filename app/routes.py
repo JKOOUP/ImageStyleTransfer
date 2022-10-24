@@ -26,7 +26,7 @@ async def style_transfer_ws(websocket: WebSocket) -> None:
             username=request.username,
             content_image=request.content_image.to_pil_image(),
             style_image=request.style_image.to_pil_image(),
-            num_iteration=1000,
+            num_iteration=50,
             collect_content_loss_layers=[3],
             collect_style_loss_layers=[0, 1, 2, 3],
         )
@@ -43,6 +43,13 @@ async def style_transfer_ws(websocket: WebSocket) -> None:
             except AssertionError:
                 break
             await asyncio.sleep(5)
+
+        try:
+            result_image = transfer_style_task.result()
+            await StyleTransferResponse.from_pil_image(result_image, 100).to_websocket(websocket)
+        except Exception as exc:
+            print(exc)
+
     finally:
         if transfer_style_task is not None:
             transfer_style_task.cancel()
