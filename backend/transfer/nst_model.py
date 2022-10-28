@@ -22,16 +22,19 @@ class NSTModel(nn.Module):
     Model for neural style transfer
     """
     def __init__(self,
+                 username: str,
                  content_image: Image,
                  style_image: Image,
                  pretrained_model_type: str = "vgg11",
                  path_to_save_dir: Path = Config.path_to_backend / "./transfer/pretrained") -> None:
         """
         Initialize NSTModel
+        :param username: username
         :param content_image: content image
         :param style_image: style image
         :param path_to_save_dir: path for downloading pretrained model
         """
+        self._username = username
         self._initialize_available_models()
         assert pretrained_model_type in self._available_base_models.keys(), \
             f"Only {self._available_base_models.keys()} is available for base model"
@@ -79,10 +82,9 @@ class NSTModel(nn.Module):
         for layer_idx in collect_style_loss_layers:
             style_loss += self._style_loss_layers[layer_idx].loss
         style_loss /= len(collect_style_loss_layers)
-
-        logger.debug(f"[CONTENT_LOSS: {content_loss.item():.6f}][STYLE_LOSS: {style_loss.item():.4f}]")
-
         loss: Tensor = content_loss + alpha * style_loss
+        logger.debug("", extra={"username": self._username, "content_loss": content_loss.item(),
+                                "style_loss": style_loss.item(), "total_loss": loss.item()})
         return loss
 
     def cut_model(self, conv_layer_idx: int) -> None:

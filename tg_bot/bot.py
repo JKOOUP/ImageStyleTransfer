@@ -1,5 +1,4 @@
 import yaml
-import logging
 import typing as tp
 
 from aiogram import Bot
@@ -9,13 +8,15 @@ from aiogram.types import ContentTypes
 from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
+from backend.config import Config
+from backend.logger import get_logger
 from tg_bot.controller import stop_nst_controller, set_image_controller, start_style_transfer_controller
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
+logger = get_logger(__name__)
 
 
-with open("config.yaml", "r") as config_file:
+with open(Config.path_to_backend / "../tg_bot/config.yaml", "r") as config_file:
     bot_config = yaml.safe_load(config_file)
 
 
@@ -55,6 +56,11 @@ async def process_set_image(message: Message) -> None:
 async def process_start_image_style_transfer(message: Message) -> None:
     try:
         user_data: dict[str, tp.Any] = await dispatcher.storage.get_data(chat=message.chat.id, user=message.from_user.username)
+        if ("content_image" not in user_data) or ("style_image" not in user_data):
+            logger.debug(f"User {message.from_user.username} didn't provide content or style image. Transfer stopped.")
+            await message.answer("Please, set content and style images using /content_image and /style_image commands.")
+            return
+
         transfer_message: Message = await message.answer_photo(user_data["content_image"].file_id, caption="Starting transfer...")
         result: str = await start_style_transfer_controller(message.chat.id, message.from_user.username, dispatcher.storage, transfer_message)
         if result != "Transfer completed!":

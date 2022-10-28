@@ -35,7 +35,7 @@ class StyleTransferProcessor:
                   collect_style_loss_layers: list[int],
                   pretrained_model_type: str = "vgg11") -> "StyleTransferProcessor":
         self._username = username
-        self._nst_model = NSTModel(content_image, style_image, pretrained_model_type=pretrained_model_type)
+        self._nst_model = NSTModel(username, content_image, style_image, pretrained_model_type=pretrained_model_type)
 
         self._input_tensor = Compose([
             ToTensor(),
@@ -50,14 +50,14 @@ class StyleTransferProcessor:
         self._collect_style_loss_layers = collect_style_loss_layers
         self._nst_model.cut_model(max(self._collect_style_loss_layers + self._collect_content_loss_layers))
         self._init_content_image_size = content_image.size
-        logger.info(f"[{self._username}][StyleTransferProcessor was successfully configured.]")
+        logger.debug("StyleTransferProcessor was successfully configured.", extra={"username": self._username})
         return self
 
-    async def get_current_image(self) -> Image:
+    def get_current_image(self) -> Image:
         assert self._input_tensor is not None, "StyleTransferProcessor is not configured! Call configure() method!"
         assert self._transfer_status != 0, "StyleTransferProcessor isn't transferring now!"
 
-        logger.info(f"[{self._username}][Get current style transfer result.]")
+        logger.debug("Get current style transfer result.", extra={"username": self._username})
 
         current_img_tensor: Tensor = self._input_tensor.detach() * Config.normalization_std + Config.normalization_mean
         current_img_tensor = current_img_tensor.clamp(0, 1).squeeze(0)
@@ -70,7 +70,7 @@ class StyleTransferProcessor:
         return 100 * self._transfer_status // self._num_iteration
 
     async def transfer_style(self) -> Image:
-        logger.info(f"[{self._username}][Started style transfer process.]")
+        logger.debug("Started style transfer process.", extra={"username": self._username})
         for iteration_idx in range(self._num_iteration):
             self._transfer_status = iteration_idx + 1
 
@@ -78,11 +78,11 @@ class StyleTransferProcessor:
             await self._process_transfer_iteration()
 
             if (iteration_idx + 1) % (self._num_iteration // 10) == 0:
-                logger.info(f"[{self._username}][Completed {100 * (iteration_idx + 1) / self._num_iteration:.2f}%]")
+                logger.info(f"Completed {100 * (iteration_idx + 1) / self._num_iteration:.2f}%.", extra={"username": self._username})
 
-        result: Image = await self.get_current_image()
+        result: Image = self.get_current_image()
         self._transfer_status = 0
-        logger.info(f"[{self._username}][Ended style transfer process.]")
+        logger.info("Ended style transfer process.", extra={"username": self._username})
         return result
 
     async def _process_transfer_iteration(self) -> None:

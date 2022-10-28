@@ -1,55 +1,37 @@
 import asyncio
 import typing as tp
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from backend.logger import get_logger
 from app.websocket_protocols import StartStyleTransferRequest, StyleTransferResponse
-from backend.transfer.transfer import StyleTransferProcessor
-
+from app.controllers import style_transfer_ws_controller
 
 router = APIRouter()
-event_loop = asyncio.get_event_loop()
 logger = get_logger(__name__)
 
 
 @router.websocket("/style_transfer")
 async def style_transfer_ws(websocket: WebSocket) -> None:
     await websocket.accept()
-    transfer_style_task: tp.Optional[asyncio.Task] = None
+    username: tp.Optional[str] = None
+    style_transfer_task: tp.Optional[asyncio.Task] = None
 
     try:
         request = await StartStyleTransferRequest.from_websocket(websocket)
+        username = request.username
+        logger.info("Got request for style transfer.", extra={"username": username})
 
-        processor = StyleTransferProcessor()
-        processor.configure(
-            username=request.username,
-            content_image=request.content_image.to_pil_image(),
-            style_image=request.style_image.to_pil_image(),
-            num_iteration=50,
-            collect_content_loss_layers=[3],
-            collect_style_loss_layers=[0, 1, 2, 3],
-        )
-
-        transfer_style_task = event_loop.create_task(processor.transfer_style())
-        await asyncio.sleep(0)
-
-        while not transfer_style_task.done() or not transfer_style_task.cancelled():
-            try:
-                await StyleTransferResponse.from_pil_image(
-                    await processor.get_current_image(),
-                    processor.get_current_transfer_status(),
-                ).to_websocket(websocket)
-            except AssertionError:
-                break
-            await asyncio.sleep(5)
-
-        try:
-            result_image = transfer_style_task.result()
-            await StyleTransferResponse.from_pil_image(result_image, 100).to_websocket(websocket)
-        except Exception as exc:
-            print(exc)
-
+        response_generator: tp.AsyncGenerator[tp.Optional[asyncio.Task, StyleTransferResponse], None] = style_transfer_ws_controller(request)
+        style_transfer_task: asyncio.Task = await anext(response_generator)
+        async for response in response_generator:
+            await response.to_websocket(websocket)
+    except AssertionError as exc:
+        logger.warning("Style transfer failed with exception.", exc_info=exc, extra={"username": username})
+    except WebSocketDisconnect:
+        logger.info("User disconnected.", extra={"username": username})
     finally:
-        if transfer_style_task is not None:
-            transfer_style_task.cancel()
+        if style_transfer_task and (not style_transfer_task.done()):
+            style_transfer_task.cancel()
+            logger.info("Style transfer task was cancelled.", extra={"username": username})
+        await websocket.close()

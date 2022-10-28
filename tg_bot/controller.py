@@ -65,7 +65,7 @@ async def receive_intermediate_style_transfer_results(chat_id: int, username: st
 
         user_data: dict[str, tp.Any] = await storage.get_data(chat=chat_id, user=username)
         if user_data.get("stop_transfer", False):
-            logger.debug(f"User {username} interrupted transfer.")
+            logger.debug(f"User {username} start interrupting transfer.")
             user_data["stop_transfer"] = False
             await storage.set_data(chat=chat_id, user=username, data=user_data)
             raise TransferStoppedException("User stopped transfer process.")
@@ -90,12 +90,13 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
 
             async for media_photo in receive_intermediate_style_transfer_results(chat_id, username, storage, websocket):
                 await transfer_message.edit_media(media_photo)
+            logger.debug(f"User {username} successfully transferred style.")
     except TransferStoppedException:
         logger.debug(f"User {username} successfully interrupted transfer.")
         result_message = "Successfully stopped transfer!"
-    except websockets.ConnectionClosedOK:
-        logger.debug(f"Transfer for user {username} ended successfully!")
-        result_message = "Transfer completed!"
+    except websockets.ConnectionClosed as exc:
+        logger.debug(f"User {username} disconnected!", exc_info=exc)
+        result_message = "Sorry, something went wrong during transfer process. Please try again."
     except Exception as exc:
         logger.warning(f"User {username} unsuccessfully attempted to transfer style", exc_info=exc)
         result_message = "Sorry, something went wrong during transfer process. Please try again."

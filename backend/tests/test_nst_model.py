@@ -25,7 +25,7 @@ def style_image() -> tp.Generator[Tensor, None, None]:
 
 @pytest.fixture(scope="module")
 def model(content_image: Image.Image, style_image: Image.Image) -> tp.Generator[torch.nn.Module, None, None]:
-    yield NSTModel(content_image, style_image)
+    yield NSTModel("test_user", content_image, style_image)
 
 
 def test_nst_model_structure(model: torch.nn.Module) -> None:
@@ -42,7 +42,7 @@ def test_nst_model_structure(model: torch.nn.Module) -> None:
 
 
 def test_nst_model_collects_gradients(model: torch.nn.Module, content_image: Image.Image) -> None:
-    input_img: Tensor = torch.randn(1, 3, *content_image.size, requires_grad=True)
+    input_img: Tensor = torch.randn(1, 3, *Config.working_image_size, requires_grad=True)
 
     model(input_img)
 

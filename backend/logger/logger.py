@@ -2,33 +2,51 @@ import logging.config
 
 from backend.config import Config
 
+
 LOGGING_LEVEL = "DEBUG" if Config.debug else "INFO"
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": True,
     "formatters": {
         "default": {
-            "level": LOGGING_LEVEL,
             "format": "[%(asctime)s][%(levelname)s][%(name)s][%(message)s]",
         },
-        "style_transfer_metrics": {
-            "level": LOGGING_LEVEL,
-            "format": "[%(asctime)s][%(levelname)s]%(message)s",
+        "app_router_formatter": {
+            "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][%(message)s]",
         },
+        "backend_nst_model_loss_formatter": {
+            "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][content: %(content_loss).3f][style: %(content_loss).3f]"
+                      "[total: %(total_loss).3f]"
+        },
+        "backend_transfer_formatter": {
+            "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][%(message)s]",
+        }
     },
     "handlers": {
         "default": {
             "level": LOGGING_LEVEL,
             "formatter": "default",
             "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
+            "stream": "ext://sys.stderr",
         },
-        "style_transfer_metrics": {
+        "app_handler": {
             "level": LOGGING_LEVEL,
-            "formatter": "style_transfer_metrics",
+            "formatter": "app_router_formatter",
             "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
+            "stream": "ext://sys.stderr",
         },
+        "backend_nst_model_handler": {
+            "level": LOGGING_LEVEL,
+            "formatter": "backend_nst_model_loss_formatter",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+        "backend_transfer_handler": {
+            "level": LOGGING_LEVEL,
+            "formatter": "backend_transfer_formatter",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        }
     },
     "loggers": {
         "": {
@@ -36,18 +54,23 @@ LOGGING_CONFIG = {
             "level": LOGGING_LEVEL,
             "propagate": False,
         },
-        "app.main": {
-            "handlers": ["default"],
+        "app.routes": {
+            "handlers": ["app_handler"],
+            "level": LOGGING_LEVEL,
+            "propagate": False,
+        },
+        "app.controllers": {
+            "handlers": ["app_handler"],
             "level": LOGGING_LEVEL,
             "propagate": False,
         },
         "backend.transfer.nst_model": {
-            "handlers": ["style_transfer_metrics"],
+            "handlers": ["backend_nst_model_handler"],
             "level": LOGGING_LEVEL,
             "propagate": False,
         },
         "backend.transfer.transfer": {
-            "handlers": ["default"],
+            "handlers": ["backend_transfer_handler"],
             "level": LOGGING_LEVEL,
             "propagate": False,
         },

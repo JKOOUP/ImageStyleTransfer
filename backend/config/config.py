@@ -5,7 +5,7 @@ from pathlib import Path
 
 class Config:
     # Path to backend package
-    path_to_backend: Path = Path().cwd().parent.absolute().resolve()
+    path_to_backend: Path = Path(__file__).absolute().parent.parent.resolve()
 
     # The device on which the calculations take place
     # Default value depends on your system (GPU or CPU)
@@ -22,4 +22,4 @@ class Config:
     alpha: torch.Tensor = torch.tensor(10000, device=device)
 
     # Enable debug mode
-    debug: bool = False
+    debug: bool = True
