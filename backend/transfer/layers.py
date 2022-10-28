@@ -17,7 +17,7 @@ class ContentLossLayer(torch.nn.Module):
             f"Input tensor has to be [1, C, H, W], but {target.shape} met!"
 
         super().__init__()
-        self.target: torch.Tensor = target
+        self.target: torch.Tensor = target.to(Config.device)
         self.loss: torch.Tensor = torch.tensor(0.0, device=Config.device)
 
     def forward(self, inp: torch.Tensor) -> torch.Tensor:
@@ -41,7 +41,7 @@ class StyleLossLayer(torch.nn.Module):
             f"Input tensor has to be [1, C, H, W], but {target.shape} met!"
 
         super().__init__()
-        self.target_gram_matrix = self._gram_matrix(target).detach()
+        self.target_gram_matrix = self._gram_matrix(target.to(Config.device)).detach()
         self.loss: torch.Tensor = torch.tensor(0.0, device=Config.device)
 
     def forward(self, inp: torch.Tensor) -> torch.Tensor:

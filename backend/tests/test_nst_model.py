@@ -42,16 +42,16 @@ def test_nst_model_structure(model: torch.nn.Module) -> None:
 
 
 def test_nst_model_collects_gradients(model: torch.nn.Module, content_image: Image.Image) -> None:
-    input_img: Tensor = torch.randn(1, 3, *Config.working_image_size, requires_grad=True)
+    input_img: Tensor = torch.randn(1, 3, *Config.working_image_size, requires_grad=True, device=Config.device)
 
     model(input_img)
 
-    cumulative_style_loss: Tensor = torch.tensor(0.0)
+    cumulative_style_loss: Tensor = torch.tensor(0.0, device=Config.device)
     for style_layer in model._style_loss_layers:
         cumulative_style_loss += style_layer.loss
         assert style_layer.loss.item() != pytest.approx(0.0, abs=1e-6)
 
-    cumulative_content_loss: Tensor = torch.tensor(0.0)
+    cumulative_content_loss: Tensor = torch.tensor(0.0, device=Config.device)
     for content_layer in model._content_loss_layers:
         cumulative_content_loss += content_layer.loss
         assert content_layer.loss.item() != pytest.approx(0.0, abs=1e-6)
@@ -60,4 +60,4 @@ def test_nst_model_collects_gradients(model: torch.nn.Module, content_image: Ima
     loss.backward()
 
     assert input_img.grad is not None
-    assert input_img.grad.data != pytest.approx(torch.zeros_like(input_img.grad.data), abs=1e-6)
+    assert input_img.grad.data.cpu() != pytest.approx(torch.zeros_like(input_img.grad.data.cpu()), abs=1e-6)
