@@ -84,7 +84,7 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
 
     result_message: str = "Transfer completed!"
     try:
-        async with websockets.connect("ws://localhost:8000/style_transfer") as websocket:
+        async with websockets.connect("ws://localhost:8001/style_transfer") as websocket:
             request = StartStyleTransferRequest(username, content_image, style_image)
             await request.to_websocket(websocket)
 

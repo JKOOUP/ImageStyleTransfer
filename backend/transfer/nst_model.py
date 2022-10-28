@@ -51,7 +51,7 @@ class NSTModel(nn.Module):
 
         self._content_loss_layers: list[ContentLossLayer] = []
         self._style_loss_layers: list[StyleLossLayer] = []
-        self._model = self._build_model(content_image, style_image, pretrained_model_type)
+        self._model = self._build_model(content_image, style_image, pretrained_model_type).to(Config.device)
 
     def forward(self, inp: Tensor) -> Tensor:
         """
@@ -129,8 +129,8 @@ class NSTModel(nn.Module):
         base_model: nn.Module = self._load_pretrained_base_model(pretrained_model_type)
         result = nn.Sequential()
 
-        current_content_tensor: Tensor = self._transforms(content_image).unsqueeze(0)
-        current_style_tensor: Tensor = self._transforms(style_image).unsqueeze(0)
+        current_content_tensor: Tensor = self._transforms(content_image).unsqueeze(0).to(Config.device)
+        current_style_tensor: Tensor = self._transforms(style_image).unsqueeze(0).to(Config.device)
 
         idx: int = 0
         for layer in base_model.children():
@@ -138,9 +138,9 @@ class NSTModel(nn.Module):
             current_style_tensor = layer(current_style_tensor)
             if isinstance(layer, nn.Conv2d):
                 result.append(layer)
-                result.append(ContentLossLayer(current_content_tensor))
+                result.append(ContentLossLayer(current_content_tensor).to(Config.device))
                 self._content_loss_layers.append(result[-1])
-                result.append(StyleLossLayer(current_style_tensor))
+                result.append(StyleLossLayer(current_style_tensor).to(Config.device))
                 self._style_loss_layers.append(result[-1])
                 idx += 1
             elif isinstance(layer, nn.ReLU):
@@ -163,7 +163,7 @@ class NSTModel(nn.Module):
         if model_type.startswith("vgg"):
             base_model: nn.Module = self._available_base_models[model_type](
                 weights=self._available_base_models_weights[model_type]
-            ).eval().features
+            ).eval().features.to(Config.device)
         else:
             raise NotImplementedError("Only vgg models available as base models!")
         return base_model

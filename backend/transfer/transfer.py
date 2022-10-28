@@ -41,7 +41,7 @@ class StyleTransferProcessor:
             ToTensor(),
             Normalize(mean=Config.normalization_mean, std=Config.normalization_std),
             Resize(Config.working_image_size),
-        ])(content_image).view(1, 3, *Config.working_image_size)
+        ])(content_image).view(1, 3, *Config.working_image_size).to(Config.device)
         self._input_tensor.requires_grad = True
 
         self._optimizer = Adam([self._input_tensor], lr=0.01)
@@ -64,7 +64,7 @@ class StyleTransferProcessor:
         return Compose([
             Resize(self._init_content_image_size),
             ToPILImage(),
-        ])(current_img_tensor)
+        ])(current_img_tensor.cpu())
 
     def get_current_transfer_status(self) -> int:
         return 100 * self._transfer_status // self._num_iteration

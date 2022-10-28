@@ -35,7 +35,7 @@ async def current_states_generator(
         processor: StyleTransferProcessor,
         username: str,
         sleep_time: int) -> tp.AsyncGenerator[StyleTransferResponse, None]:
-    while (not style_transfer_task.done()) or (not style_transfer_task.cancelled()) and (processor.get_current_transfer_status() != 0):
+    while ((not style_transfer_task.done()) or (not style_transfer_task.cancelled())) and (processor.get_current_transfer_status() != 0):
         try:
             response: StyleTransferResponse = StyleTransferResponse.from_pil_image(
                 processor.get_current_image(),
@@ -50,15 +50,15 @@ async def current_states_generator(
         await asyncio.sleep(sleep_time)
 
 
-def get_style_transfer_task_result(style_transfer_task: asyncio.Task) -> tp.Optional[StyleTransferResponse]:
+def get_style_transfer_task_result(username: str, style_transfer_task: asyncio.Task) -> tp.Optional[StyleTransferResponse]:
     try:
         result: Image = style_transfer_task.result()
         return StyleTransferResponse.from_pil_image(result, completeness=100)
     except CancelledError:
-        logger.warning("Failed to get transfer style task result, since task was cancelled.")
+        logger.warning("Failed to get transfer style task result, since task was cancelled.", extra={"username": username})
         raise
     except Exception as exc:
-        logger.warning("Transfer style task failed with exception.", exc_info=exc)
+        logger.warning("Transfer style task failed with exception.", exc_info=exc, extra={"username": username})
         raise
 
 
@@ -80,7 +80,7 @@ async def style_transfer_ws_controller(request: StartStyleTransferRequest) \
         yield response
         logger.debug(f"Sent response with completeness = {response.completeness}%.", extra={"username": request.username})
 
-    final_response: tp.Optional[StyleTransferResponse] = get_style_transfer_task_result(style_transfer_task)
+    final_response: tp.Optional[StyleTransferResponse] = get_style_transfer_task_result(request.username, style_transfer_task)
     if final_response:
         yield final_response
         logger.debug("Sent final response.", extra={"username": request.username})
