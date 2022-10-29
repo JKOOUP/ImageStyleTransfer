@@ -34,18 +34,30 @@ class StartStyleTransferRequest:
     username: str
     content_image: WebsocketImage
     style_image: WebsocketImage
+    num_iteration: int
+    content_loss_layers_id: list[int]
+    style_loss_layers_id: list[int]
+    alpha: float
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "StartStyleTransferRequest":
         username = await websocket.receive_text()
         content_image = await WebsocketImage.from_websocket(websocket)
         style_image = await WebsocketImage.from_websocket(websocket)
-        return StartStyleTransferRequest(username, content_image, style_image)
+        num_iteration = int(await websocket.receive_text())
+        content_loss_layers_id = [int(elem) for elem in (await websocket.receive_text()).split()]
+        style_loss_layers_id = [int(elem) for elem in (await websocket.receive_text()).split()]
+        alpha = float(await websocket.receive_text())
+        return StartStyleTransferRequest(username, content_image, style_image, num_iteration, content_loss_layers_id, style_loss_layers_id, alpha)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
         await websocket.send_text(self.username)
         await self.content_image.to_websocket(websocket)
         await self.style_image.to_websocket(websocket)
+        await websocket.send_text(str(self.num_iteration))
+        await websocket.send_text(" ".join(*self.content_loss_layers_id))
+        await websocket.send_text(" ".join(*self.style_loss_layers_id))
+        await websocket.send_text(str(self.alpha))
 
 
 @dataclass

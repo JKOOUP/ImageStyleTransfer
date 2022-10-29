@@ -17,10 +17,6 @@ class WebsocketImage:
         bytes_array: bytes = await websocket.recv()
         return WebsocketImage(bytes_array, size)
 
-    async def to_websocket(self, websocket: WebSocket) -> None:
-        await websocket.send(str(self.size[0]) + " " + str(self.size[1]))
-        await websocket.send(self.bytes_array)
-
     @staticmethod
     def from_pil_image(img: Image.Image) -> Image:
         bytes_array = img.tobytes()
@@ -35,6 +31,10 @@ class WebsocketImage:
         bytes_array: bytes = Image.open(stream).tobytes()
         photo_size: tuple[int, int] = (photo.width, photo.height)
         return WebsocketImage(bytes_array, photo_size)
+
+    async def to_websocket(self, websocket: WebSocket) -> None:
+        await websocket.send(str(self.size[0]) + " " + str(self.size[1]))
+        await websocket.send(self.bytes_array)
 
     async def to_bytes_stream(self) -> BytesIO:
         pil_image: Image.Image = self.to_pil_image()
@@ -53,18 +53,30 @@ class StartStyleTransferRequest:
     username: str
     content_image: WebsocketImage
     style_image: WebsocketImage
+    num_iteration: int
+    content_loss_layers_id: list[int]
+    style_loss_layers_id: list[int]
+    alpha: float
 
     @staticmethod
     async def from_websocket(websocket: WebSocket) -> "StartStyleTransferRequest":
         username: str = await websocket.recv()
         content_image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
         style_image: WebsocketImage = await WebsocketImage.from_websocket(websocket)
-        return StartStyleTransferRequest(username, content_image, style_image)
+        num_iteration: int = int(await websocket.recv())
+        content_loss_layers_id = [int(elem) for elem in (await websocket.recv()).split()]
+        style_loss_layers_id = [int(elem) for elem in (await websocket.recv()).split()]
+        alpha = float(await websocket.recv())
+        return StartStyleTransferRequest(username, content_image, style_image, num_iteration, content_loss_layers_id, style_loss_layers_id, alpha)
 
     async def to_websocket(self, websocket: WebSocket) -> None:
         await websocket.send(self.username)
         await self.content_image.to_websocket(websocket)
         await self.style_image.to_websocket(websocket)
+        await websocket.send(str(self.num_iteration))
+        await websocket.send(" ".join(map(str, self.content_loss_layers_id)))
+        await websocket.send(" ".join(map(str, self.style_loss_layers_id)))
+        await websocket.send(str(self.alpha))
 
 
 @dataclass

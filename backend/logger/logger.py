@@ -15,7 +15,7 @@ LOGGING_CONFIG = {
             "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][%(message)s]",
         },
         "backend_nst_model_loss_formatter": {
-            "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][content: %(content_loss).3f][style: %(content_loss).3f]"
+            "format": "[%(asctime)s][%(levelname)s][%(name)s][%(username)s][content: %(content_loss).3f][style: %(style_loss).3f]"
                       "[total: %(total_loss).3f]"
         },
         "backend_transfer_formatter": {

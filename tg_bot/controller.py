@@ -86,7 +86,16 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
     result_message: str = "Transfer completed!"
     try:
         async with websockets.connect(f"ws://localhost:{Config.backend_port}/style_transfer") as websocket:
-            request = StartStyleTransferRequest(username, content_image, style_image)
+            user_data: dict[str, tp.Any] = await storage.get_data(chat=chat_id, user=username)
+            request = StartStyleTransferRequest(
+                username=username,
+                content_image=content_image,
+                style_image=style_image,
+                num_iteration=user_data.get("num_iteration", 250),
+                content_loss_layers_id=user_data.get("content_loss_layers_id", [0, 1, 2, 3, 4]),
+                style_loss_layers_id=user_data.get("style_loss_layers_id", [3, 4]),
+                alpha=user_data.get("alpha", 1.0),
+            )
             await request.to_websocket(websocket)
 
             async for media_photo in receive_intermediate_style_transfer_results(chat_id, username, storage, websocket):
@@ -106,3 +115,23 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
         user_data["has_running_transfer"] = False
         await storage.set_data(chat=chat_id, user=username, data=user_data)
     return result_message
+
+
+async def set_style_transfer_parameter(chat_id: int, username: str, storage: BaseStorage, parameter_name: str, message_args: str) -> str:
+    try:
+        assert len(message_args) > 0
+        user_data: dict[str, tp.Any] = await storage.get_data(chat=chat_id, user=username)
+        if parameter_name == "alpha":
+            user_data["alpha"] = float(message_args) * 10000
+        elif parameter_name == "content_loss_layers_id":
+            user_data["content_loss_layers_id"] = [int(elem) for elem in message_args.split()]
+        elif parameter_name == "style_loss_layers_id":
+            user_data["style_loss_layers_id"] = [int(elem) for elem in message_args.split()]
+        elif parameter_name == "num_iteration":
+            user_data["num_iteration"] = int(message_args)
+        logger.debug(f"Successfully set '{parameter_name}' parameter for {username}.")
+        await storage.set_data(chat=chat_id, user=username, data=user_data)
+        return f"Successfully set '{parameter_name}' parameter."
+    except Exception as exc:
+        logger.debug(f"User {username} tried to set '{parameter_name}' parameter with incorrect value.", exc_info=exc)
+        return f"Failed to set '{parameter_name}' parameter. Check correctness of arguments."

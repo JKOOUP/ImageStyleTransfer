@@ -1,4 +1,5 @@
 import asyncio
+import torch
 import typing as tp
 
 from torch import Tensor
@@ -23,6 +24,7 @@ class StyleTransferProcessor:
         self._num_iteration: tp.Optional[int] = None
         self._collect_content_loss_layers: tp.Optional[list[int]] = None
         self._collect_style_loss_layers: tp.Optional[list[int]] = None
+        self._alpha: tp.Optional[Tensor] = None
         self._init_content_image_size: tp.Optional[tuple[int, int]] = None
         self._transfer_status: int = 0
 
@@ -33,6 +35,7 @@ class StyleTransferProcessor:
                   num_iteration: int,
                   collect_content_loss_layers: list[int],
                   collect_style_loss_layers: list[int],
+                  alpha: float,
                   pretrained_model_type: str = "vgg11") -> "StyleTransferProcessor":
         self._username = username
         self._nst_model = NSTModel(username, content_image, style_image, pretrained_model_type=pretrained_model_type)
@@ -48,9 +51,14 @@ class StyleTransferProcessor:
         self._num_iteration = num_iteration
         self._collect_content_loss_layers = collect_content_loss_layers
         self._collect_style_loss_layers = collect_style_loss_layers
+        self._alpha = torch.tensor(alpha, device=Config.device, dtype=torch.float32)
         self._nst_model.cut_model(max(self._collect_style_loss_layers + self._collect_content_loss_layers))
         self._init_content_image_size = content_image.size[::-1]
-        logger.debug("StyleTransferProcessor was successfully configured.", extra={"username": self._username})
+        logger.debug("StyleTransferProcessor was successfully configured with parameters:", extra={"username": self._username})
+        logger.debug(f"NUM_ITERATIONS: {self._num_iteration}", extra={"username": self._username})
+        logger.debug(f"CONTENT_LOSS_LAYERS: {self._collect_content_loss_layers}", extra={"username": self._username})
+        logger.debug(f"STYLE_LOSS_LAYERS: {self._collect_style_loss_layers}", extra={"username": self._username})
+        logger.debug(f"ALPHA: {self._alpha}", extra={"username": self._username})
         return self
 
     def get_current_image(self) -> Image:
@@ -65,6 +73,9 @@ class StyleTransferProcessor:
             Resize(self._init_content_image_size),
             ToPILImage(),
         ])(current_img_tensor.cpu())
+
+    def is_transferring(self) -> bool:
+        return self._transfer_status > 0
 
     def get_current_transfer_status(self) -> int:
         return 100 * self._transfer_status // self._num_iteration
@@ -89,6 +100,6 @@ class StyleTransferProcessor:
         assert self._nst_model is not None, "StyleTransferProcessor is not configured! Call configure() method!"
         self._optimizer.zero_grad()
         self._nst_model(self._input_tensor)
-        loss: Tensor = self._nst_model.collect_loss(self._collect_content_loss_layers, self._collect_style_loss_layers)
+        loss: Tensor = self._nst_model.collect_loss(self._collect_content_loss_layers, self._collect_style_loss_layers, self._alpha)
         loss.backward(retain_graph=True)
         self._optimizer.step()

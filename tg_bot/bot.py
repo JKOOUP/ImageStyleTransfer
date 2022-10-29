@@ -10,7 +10,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from backend.config import Config
 from backend.logger import get_logger
-from tg_bot.controller import stop_nst_controller, set_image_controller, start_style_transfer_controller
+from tg_bot.controller import stop_nst_controller, set_image_controller, start_style_transfer_controller, set_style_transfer_parameter
 
 
 logger = get_logger(__name__)
@@ -68,6 +68,34 @@ async def process_start_image_style_transfer(message: Message) -> None:
     except Exception as exc:
         await message.answer("Sorry, something went wrong during transferring style. Please try again.")
         logger.warning(f"{message.from_user.username}'s attempt to transfer style is failed with exception", exc_info=exc)
+
+
+@dispatcher.message_handler(commands=["set_alpha"])
+async def process_set_alpha(message: Message) -> None:
+    result: str = await set_style_transfer_parameter(message.chat.id, message.from_user.username,
+                                                     dispatcher.storage, "alpha", message.get_args())
+    await message.answer(result)
+
+
+@dispatcher.message_handler(commands=["set_content_loss_layers_id"])
+async def process_set_content_loss_layers_id(message: Message):
+    result: str = await set_style_transfer_parameter(message.chat.id, message.from_user.username,
+                                                     dispatcher.storage, "content_loss_layers_id", message.get_args())
+    await message.answer(result)
+
+
+@dispatcher.message_handler(commands=["set_style_loss_layers_id"])
+async def process_set_style_loss_layers_id(message: Message):
+    result: str = await set_style_transfer_parameter(message.chat.id, message.from_user.username,
+                                                     dispatcher.storage, "style_loss_layers_id", message.get_args())
+    await message.answer(result)
+
+
+@dispatcher.message_handler(commands=["set_num_iteration"])
+async def process_set_num_iteration(message: Message):
+    result: str = await set_style_transfer_parameter(message.chat.id, message.from_user.username,
+                                                     dispatcher.storage, "num_iteration", message.get_args())
+    await message.answer(result)
 
 
 if __name__ == "__main__":
