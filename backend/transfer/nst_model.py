@@ -96,7 +96,7 @@ class NSTModel(nn.Module):
             if isinstance(layer, nn.Conv2d):
                 conv_layer_idx -= 1
             if conv_layer_idx + 1 == 0:
-                self._model = self._model[:model_layer_idx + 2]
+                self._model = self._model[:model_layer_idx + 3]
                 return
 
     def _initialize_available_models(self) -> None:

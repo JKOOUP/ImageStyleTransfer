@@ -85,7 +85,8 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
 
     result_message: str = "Transfer completed!"
     try:
-        async with websockets.connect(f"ws://localhost:{Config.backend_port}/style_transfer") as websocket:
+        async with websockets.connect(f"ws://localhost:{Config.backend_port}/style_transfer",
+                                      max_size=2**30, read_limit=2**30, write_limit=2**30) as websocket:
             user_data: dict[str, tp.Any] = await storage.get_data(chat=chat_id, user=username)
             request = StartStyleTransferRequest(
                 username=username,
