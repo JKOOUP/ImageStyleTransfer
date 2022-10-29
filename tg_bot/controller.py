@@ -6,6 +6,7 @@ from aiogram.contrib.fsm_storage.memory import BaseStorage
 from aiogram.types import PhotoSize, Message, InputFile, InputMediaPhoto
 from websockets.legacy.client import WebSocketClientProtocol as WebSocket
 
+from backend.config import Config
 from tg_bot.exceptions import TransferStoppedException, ContentOrStyleImageNotSetException
 from tg_bot.websocket_protocols import WebsocketImage, StartStyleTransferRequest, StyleTransferResponse
 
@@ -84,7 +85,7 @@ async def start_style_transfer_controller(chat_id: int, username: str, storage: 
 
     result_message: str = "Transfer completed!"
     try:
-        async with websockets.connect("ws://localhost:8000/style_transfer") as websocket:
+        async with websockets.connect(f"ws://localhost:{Config.backend_port}/style_transfer") as websocket:
             request = StartStyleTransferRequest(username, content_image, style_image)
             await request.to_websocket(websocket)
 

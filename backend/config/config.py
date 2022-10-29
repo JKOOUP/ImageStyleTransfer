@@ -23,3 +23,7 @@ class Config:
 
     # Enable debug mode
     debug: bool = True
+
+    # Backend port
+    backend_port: int = 8000
+
