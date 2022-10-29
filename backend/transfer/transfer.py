@@ -49,7 +49,7 @@ class StyleTransferProcessor:
         self._collect_content_loss_layers = collect_content_loss_layers
         self._collect_style_loss_layers = collect_style_loss_layers
         self._nst_model.cut_model(max(self._collect_style_loss_layers + self._collect_content_loss_layers))
-        self._init_content_image_size = content_image.size
+        self._init_content_image_size = content_image.size[::-1]
         logger.debug("StyleTransferProcessor was successfully configured.", extra={"username": self._username})
         return self
 

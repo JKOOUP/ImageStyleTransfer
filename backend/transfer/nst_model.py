@@ -109,7 +109,7 @@ class NSTModel(nn.Module):
             "vgg11": vgg11,
             "vgg13": vgg13,
             "vgg16": vgg16,
-            "vgg17": vgg19,
+            "vgg19": vgg19,
         }
         self._available_base_models_weights: dict[str, tp.Any] = {
             "vgg11": VGG11_Weights.DEFAULT,
